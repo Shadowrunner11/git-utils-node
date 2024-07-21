@@ -88,7 +88,7 @@ const actionByCommand = {
                 <td>${deletions}</td>
               </tr>
             </tbody>
-          </table>`
+          </table>`.split('\n').map(line=>line.trim()).join('')
         )
       }else if(report === 'complete'){
         console.table(changes);
