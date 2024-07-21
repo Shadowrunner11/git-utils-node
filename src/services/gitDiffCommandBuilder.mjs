@@ -47,7 +47,7 @@ export class GitDiffCommandBuilder extends BaseCommandBuilder {
    */
   addDiffFilter(filter){
     if(!filter)
-      throw new Error('filter not added')
+      return this;
 
     if(typeof filter === 'string')
       return this.addOption('diff-filter',filter)
