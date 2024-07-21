@@ -13,6 +13,7 @@ export interface BaseCommandFluentBuilderOptions {
     env?: NodeJS.ProcessEnv;
     onError?: 'throw' | 'ignore';
     initialArgs?: Iterable<ArgOrOption>;
+    command?: string;
 }
 
 export interface BaseCommandFluentBuilder {
@@ -31,4 +32,5 @@ export interface BaseCommandFluentBuilder {
     setOptions(options: BaseCommandFluentBuilderOptions): this;
     clone(): BaseCommandFluentBuilder;
     addArg(argOrArs: ArgOrOption| ArgOrOption[]): this;
+    setCommand(command: string): this;
 }
