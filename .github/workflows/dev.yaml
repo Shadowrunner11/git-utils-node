@@ -12,6 +12,6 @@ jobs:
         with:
           fetch-depth: 2
       - name: loc
-        run: GITHUB_OUTPUT="${GITHUB_OUTPUT}\nreport=$(node ./check.mjs loc --report=complete ${{ github.event.pull_request.head.sha }} ${{ github.event.pull_request.base.sha }})"
+        run: echo "report='$(node ./check.mjs loc --report=complete ${{ github.event.pull_request.head.sha }} ${{ github.event.pull_request.base.sha }})'" >> $GITHUB_OUTPUT
       - name: echo
         run: echo "${{ steps.loc.outputs.report }}"
