@@ -80,7 +80,7 @@ const actionByCommand = {
       limitDeleted,
       throwIfExceed,
       report = "human",
-      filters = defaultDiffFilters
+      filters
     } = options;
 
     const exclusions =
