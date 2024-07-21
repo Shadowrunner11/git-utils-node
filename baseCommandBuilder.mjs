@@ -10,31 +10,35 @@ export class BaseCommandBuilder{
      */
 	#args = []
 
-    #cwd = (typeof process !== 'undefined')? process.cwd() : undefined;
+  #cwd = (typeof process !== 'undefined')? process.cwd() : undefined;
 
-    #env = (typeof process !== 'undefined')? process.env : undefined;
+  #env = (typeof process !== 'undefined')? process.env : undefined;
 
-    #onError = 'throw';
+  #onError = 'throw';
 
-    /**
-     * @type {import('node:child_process').SpawnOptions}
-     */
-    #spawnOptions = {
-        stdio: 'inherit',
-        env: this.#env,
-    };
+  /**
+   * @type {import('node:child_process').SpawnOptions}
+   */
+  #spawnOptions = {
+      stdio: 'inherit',
+      env: this.#env,
+  };
+
+
+  #command;
 
     /**
      * 
      * @param {import('./types/BaseCommandBuilder').BaseCommandFluentBuilderOptions} initialOptions
      */
     constructor(initialOptions = {}){
-        this.#args = this.addArgs(...(initialOptions.initialArgs ?? this.#args));
+        this.addArgs(...(initialOptions.initialArgs ?? this.#args));
 
         this.#cwd = initialOptions.cwd ?? this.#cwd;
         this.#env = initialOptions.env ?? this.#env;
         this.#onError = initialOptions.onError ?? this.#onError;
         this.#spawnOptions = initialOptions.spawnOptions ?? this.#spawnOptions;
+        this.#command = initialOptions.command ?? this.#command;
     }
 
     /**
@@ -44,6 +48,15 @@ export class BaseCommandBuilder{
         this.#spawnOptions = options;
 
         return this;
+    }
+
+    /**
+     * @type {BaseFluentBuilder['setCommand']}
+     */
+    setCommand(command){
+      this.#command = command;
+
+      return this;
     }
     
     /**
@@ -128,7 +141,7 @@ export class BaseCommandBuilder{
      */
     execute(){
       return new Promise((resolve, reject) => {
-        const child = spawn(this.#args[0], this.#args.slice(1), {
+        const child = spawn(this.#command, this.#args, {
           ...this.#spawnOptions,
           cwd: this.#cwd,
         });
@@ -151,7 +164,7 @@ export class BaseCommandBuilder{
      * @type {BaseFluentBuilder['executeSync']}
      */
     executeSync(){
-      const { error, ...rest } = spawnSync(this.#args[0], this.#args.slice(1), {
+      const { error, ...rest } = spawnSync(this.#command, this.#args, {
         cwd: this.#cwd,
         env: this.#env,
         ...this.#spawnOptions,
@@ -171,7 +184,7 @@ export class BaseCommandBuilder{
      * @type {BaseFluentBuilder['spawn']}
      */
     spawn(){
-      return spawn(this.#args[0], this.#args.slice(1), {
+      return spawn(this.#command, this.#args, {
         cwd: this.#cwd,
         env: this.#env,
         ...this.#spawnOptions,
