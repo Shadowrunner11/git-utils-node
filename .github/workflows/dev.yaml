@@ -18,7 +18,6 @@ jobs:
       - name: loc
         id: loc
         run: |
-          set -e
           echo "report='$(node ./check.mjs loc --report=html-table --limit-total=40 --throw-if-exceed ${{ github.event.pull_request.head.sha }} ${{ github.event.pull_request.base.sha }})'" >> $GITHUB_OUTPUT
       - name: comments
         uses: octokit/graphql-action@v2.x
@@ -34,3 +33,6 @@ jobs:
             body: ${{ steps.loc.outputs.report }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: check exceeds
+        run: |
+          echo '${{ steps.loc.outputs.report }}' | grep -q 'exceeds' && echo 'Error: Limit exceeds' && exit 1
