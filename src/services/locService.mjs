@@ -58,7 +58,7 @@ export class LOCService{
       .split("\n")
       .filter(Boolean)
       .map(splitBy("\t"))
-      .map(([additions, deletions, file]) => ({
+      .map(([deletions, additions, file]) => ({
         additions: Number(additions),
         deletions: Number(deletions),
         file: String(file),
