@@ -48,18 +48,14 @@ const actionByCommand = {
 
       const errors = [];
 
-      if(limitTotal && total > limitTotal)
+      if(limitTotal && total > Number(limitTotal))
         errors.push(`Total lines of code ${total} exceeds the limit of ${limitTotal}`);
 
-      if(limitAdded && additions > limitAdded)
+      if(limitAdded && additions > Number(limitAdded))
         errors.push(`Total lines of code added ${additions} exceeds the limit of ${limitAdded}`);
 
-      if(limitDeleted && deletions > limitDeleted)
+      if(limitDeleted && deletions > Number(limitDeleted))
         errors.push(`Total lines of code deleted ${deletions} exceeds the limit of ${limitDeleted}`);
-
-      if(errors.length && throwIfExceed){
-        throw new Error(errors.join('\n'));
-      }
 
       if(report === 'json'){
         console.log(JSON.stringify({
@@ -87,12 +83,17 @@ const actionByCommand = {
                 <td>Deletions</td>
                 <td>${deletions}</td>
               </tr>
+              ${errors.length ? "<tr><td colspan='2'>" + errors.join('</td></tr><tr><td colspan="2">') + '</td></tr>' : ''}
             </tbody>
           </table>`.split('\n').map(line=>line.trim()).join('')
         )
       }else if(report === 'complete'){
         console.table(changes);
         console.table({ total, additions, deletions });
+      }
+
+      if(errors.length && throwIfExceed){
+        throw new Error(errors.join('\n'));
       }
   },
   'files': ()=>{
