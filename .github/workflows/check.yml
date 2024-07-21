@@ -9,6 +9,10 @@ on:
         description: 'Arguments for check'
         required: false
         type: string
+    secrets:
+      GH_TOKEN:
+        description: 'GitHub Token'
+        required: true
 
 permissions:
   contents: read
