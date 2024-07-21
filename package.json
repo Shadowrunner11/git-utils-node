@@ -2,7 +2,11 @@
   "name": "git-utils-node",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./check.mjs",
+  "module": "./check.mjs",
+  "bin": {
+    "check": "./check.mjs"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

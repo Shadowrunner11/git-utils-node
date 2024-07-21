@@ -1,0 +1,14 @@
+{
+  "$schema": "./check.schema.json",
+  "loc":{
+    "exclude":[
+      ".github/*", 
+      "check.config.json", 
+      "*lock*", 
+      "types/*",
+      "README.md"
+    ],
+    "limitTotal": 400,
+    "report": "html-table"
+  }
+}

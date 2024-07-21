@@ -1,117 +1,197 @@
-import { parseArgs } from './argsUtils.mjs'
-import { GitDiffCommandBuilder } from './gitDiffCommandBuilder.mjs'
+#!/usr/bin/env node
 
-const { options, args, command } = parseArgs();
+import { parseArgs } from "./src/utils/argsUtils.mjs";
+import { getProp, splitBy, throwIf } from "./src/utils/fn-utils.mjs";
+import { GitDiffCommandBuilder } from "./src/services/gitDiffCommandBuilder.mjs";
+import { getConfig } from './src/utils/config-utils.cjs';
 
 
+const { options: optionsFromCli, args, command } = parseArgs();
+
+if (optionsFromCli.help) {
+  console.log(getHelpText());
+  process.exit(0);
+}
+
+
+const options = {
+  ...getConfig()[command],
+  ...optionsFromCli,
+};
+
+const actionByReport = {
+  json: ({ total, additions, deletions }) =>
+    JSON.stringify({
+      total,
+      additions,
+      deletions,
+    }),
+  human: ({ total, additions, deletions }) =>
+    `Total: ${total}\nAdditions: ${additions}\nDeletions: ${deletions}`,
+  "html-table": ({ total, additions, deletions, errors }) =>
+    `
+    <table>
+      <tbody>
+        <tr>
+          <td>Total</td>
+          <td>${total}</td>
+        </tr>
+        <tr>
+          <td>Additions</td>
+          <td>${additions}</td>
+        </tr>
+        <tr>
+          <td>Deletions</td>
+          <td>${deletions}</td>
+        </tr>
+        ${
+          errors.length
+            ? "<tr><td colspan=2>" +
+              errors.join("</td></tr><tr><td colspan=2>") +
+              "</td></tr>"
+            : ""
+        }
+      </tbody>
+    </table>`
+      .split("\n")
+      .map((line) => line.trim())
+      .join(""),
+  complete: ({ total, additions, deletions, changes, errors }) => {
+    console.table(changes);
+    console.table({ total, additions, deletions });
+
+    return errors.join("\n");
+  },
+};
 
 const actionByCommand = {
-  'loc': ()=>{
+  loc: () => {
     /**
-     * @type {{exclude?: string | string[]}}
+     * @type {import('./types/GitCommandBuilder').DiffFilters}
      */
-    const { exclude = [], limitTotal, limitAdded, limitDeleted, throwIfExceed, report = 'human' } = options
-    const exclusions = typeof exclude  === 'string' ? 
-      exclude.split(',') : 
-      exclude.flatMap(ex=>ex.split(','));
 
+    /**
+     * @type {import('./types/CheckCli').LOCOptions}
+     */
+    const {
+      exclude = [],
+      limitTotal,
+      limitAdded,
+      limitDeleted,
+      throwIfExceed,
+      report = "human",
+      filters
+    } = options;
 
-    const { stdout } = GitDiffCommandBuilder
-      .create()
+    const exclusions =
+      typeof exclude === "string"
+        ? exclude.split(",")
+        : exclude.flatMap(splitBy(","));
+
+    const { stdout } = GitDiffCommandBuilder.create()
       .numStat()
+      .addDiffFilter(filters)
       .addArgs(...args)
       .addExclusion(...exclusions)
       .setSpawnOptions({
-        stdio: 'pipe'
+        stdio: "pipe",
       })
-      .executeSync()
+      .executeSync();
 
-    const changes =  stdout
+    const changes = stdout
       .toString()
-      .split('\n')
+      .split("\n")
       .filter(Boolean)
-      .map((line)=>line.split('\t'))
-      .map(([deletions, additions, file])=>({
+      .map(splitBy("\t"))
+      .map(([additions, deletions, file]) => ({
         additions: Number(additions),
         deletions: Number(deletions),
-        file
-      }))
+        file: String(file),
+      }));
 
-    const { additions, deletions } = changes
-      .reduce((acc, {additions, deletions})=>({
+    const { additions, deletions } = changes.reduce(
+      (acc, { additions, deletions }) => ({
         additions: acc.additions + additions,
-        deletions: acc.deletions + deletions
-      }), {additions: 0, deletions: 0})
+        deletions: acc.deletions + deletions,
+      }),
+      { additions: 0, deletions: 0 }
+    );
 
-      const total = additions + deletions;
+    const total = additions + deletions;
 
+    /**
+     * @type {string[]}
+     */
+    const errors = [
+      {
+        limit: limitAdded,
+        value: additions,
+        error: `Total lines of code added ${additions} exceeds the limit of ${limitAdded}`,
+      },
+      {
+        limit: limitDeleted,
+        value: deletions,
+        error: `Total lines of code deleted ${deletions} exceeds the limit of ${limitDeleted}`,
+      },
+      {
+        limit: limitTotal,
+        value: total,
+        error: `Total lines of code ${total} exceeds the limit of ${limitTotal}`,
+      },
+    ]
+      .filter(({ limit, value }) => limit && value > Number(limit))
+      .map(getProp("error"));
 
-      const errors = [];
+    const reportFn = actionByReport[report];
 
-      if(limitTotal && total > Number(limitTotal))
-        errors.push(`Total lines of code ${total} exceeds the limit of ${limitTotal}`);
+    throwIf(!reportFn, `report ${report ?? ''} not found`);
 
-      if(limitAdded && additions > Number(limitAdded))
-        errors.push(`Total lines of code added ${additions} exceeds the limit of ${limitAdded}`);
+    console.log(reportFn({ total, additions, deletions, changes, errors }));
 
-      if(limitDeleted && deletions > Number(limitDeleted))
-        errors.push(`Total lines of code deleted ${deletions} exceeds the limit of ${limitDeleted}`);
-
-      if(report === 'json'){
-        console.log(JSON.stringify({
-          total,
-          additions,
-          deletions
-        }))
-      }else if(report === 'human'){
-        console.log(`Total: ${total}`);
-        console.log(`Additions: ${additions}`);
-        console.log(`Deletions: ${deletions}`);
-      }else if(report === 'html-table'){
-        console.log(`
-          <table>
-            <tbody>
-              <tr>
-                <td>Total</td>
-                <td>${total}</td>
-              </tr>
-              <tr>
-                <td>Additions</td>
-                <td>${additions}</td>
-              </tr>
-              <tr>
-                <td>Deletions</td>
-                <td>${deletions}</td>
-              </tr>
-              ${errors.length ? "<tr><td colspan=2>" + errors.join('</td></tr><tr><td colspan=2>') + '</td></tr>' : ''}
-            </tbody>
-          </table>`.split('\n').map(line=>line.trim()).join('')
-        )
-      }else if(report === 'complete'){
-        console.table(changes);
-        console.table({ total, additions, deletions });
-      }
-
-      
-      if(errors.length && throwIfExceed){
-        throw new Error(errors.join('\n'));
-      }
+    throwIf(errors.length && throwIfExceed, errors.join("\n"));
+  
   },
-  'files': ()=>{
-    GitDiffCommandBuilder
-      .create()
+  files: () => {
+    GitDiffCommandBuilder.create()
       .nameOnly()
       .addArgs(...args)
       .addExclusion()
-      .executeSync()
-  }
-}
+      .executeSync();
+  },
+};
 
 const action = actionByCommand[command];
 
-if(!action){
-  throw new Error(`command ${command} not found`);
+if (!action) {
+  throw new Error(`
+    command ${command ?? ''} not found
+    Available commands: ${Object.keys(actionByCommand).join(", ")}
+  `);
 }
 
 action();
 
+// TODO: add contextual help for each command
+function getHelpText() {
+  return `
+    Usage: check [command] [options]
+    Examples: 
+      a) To check if the total lines of code exceeds 1000 excluding package.json and package-lock.json
+        node ./check.mjs loc --limitTotal=1000 --report=html-table --exclude="./package.json,./package-lock.json" ^HEAD HEAD
+
+      b) Alternative you can use the following command (the exclude option can be used multiple times)
+        node ./check.mjs loc --limitTotal=1000 --report=html-table --exclude="./package.json" --exclude="./package-lock.json" ^HEAD HEAD
+
+    Commands:
+      loc: Check lines of code
+      files: Check files
+    Options:
+      --exclude: Exclude files or directories
+      --limitTotal: Limit total lines of code
+      --limitAdded: Limit added lines of code
+      --limitDeleted: Limit deleted lines of code
+      --throwIfExceed: Throw an error if the limit is exceeded
+      --report: Report format (human, json, html-table, complete)
+      --help: Print this message
+  `;
+}

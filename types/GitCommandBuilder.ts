@@ -34,3 +34,15 @@ export interface GitCommandFluentBuilder extends BaseCommandFluentBuilder {
   setMainBranch(): this;
   mainBranch(): this;
 }
+
+export interface DiffFilters {
+  added: boolean;
+  copied: boolean;
+  deleted: boolean;
+  modified: boolean;
+  renamed:boolean;
+  changed: boolean;
+  unmerged: boolean;
+  unknown: boolean;
+  broken: boolean;
+}
