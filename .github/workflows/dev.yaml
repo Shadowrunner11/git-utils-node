@@ -2,6 +2,10 @@ on:
   pull_request: 
     branches:
       - develop
+    
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   echo:
@@ -24,7 +28,7 @@ jobs:
               }
             }
           variables: |
-            id: ${{ github.event.pull_request.id }}
+            id: ${{ github.event.pull_request.node_id }}
             body: ${{ steps.loc.outputs.report }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
