@@ -7,6 +7,13 @@ function tryRequireOrNull(path) {
   }
 }
 
+/**
+ * 
+ * @param {{
+ *  configPath?: string;
+ *  root?: string
+ * }} param0 
+ */
 function getConfig({configPath, root = process.cwd()} = {}) {
   const { join } = require('node:path')
 

@@ -12,5 +12,6 @@ export interface LOCOptions{
 }
 
 export interface CheckOptions extends LOCOptions{
-
+  configPath?: string;
+  root?: string;
 }

@@ -29,3 +29,9 @@ This tool requires Node.js version 20.0.0 or higher.
 - [ ] Create tool to read yml
 - [ ] Add support for large diff (spawn events)
 - [ ] Add support for create reports directly into files
+- [ ] Add examples reading the group of the creator of pr  and checking if needs a different configuration
+- [ ] Add support to check if this needs and override, especially reading the tags of pr
+- [ ] Add documentation page
+- [ ] Add support for modifying or inheritance of configuration
+- [ ] Support for async spawn with events and streaming
+- [ ] Support for creating directly the needed files of the report

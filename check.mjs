@@ -1,175 +1,70 @@
 #!/usr/bin/env node
 
 import { parseArgs } from "./src/utils/argsUtils.mjs";
-import { getProp, splitBy, throwIf } from "./src/utils/fn-utils.mjs";
+import { throwIf } from "./src/utils/fn-utils.mjs";
 import { GitDiffCommandBuilder } from "./src/services/gitDiffCommandBuilder.mjs";
 import { getConfig } from './src/utils/config-utils.cjs';
+import { LOCService } from "./src/services/locService.mjs";
+import { getActionsByCommandHashMap } from "./src/modules/reportActionByCommand.mjs";
+import { Program } from "./src/services/program.mjs";
+
+/**
+ * @type {{
+ *  options: import('./types/CheckCli').CheckOptions
+ *  args: string[]
+ *  command: string
+ * }}
+ */
+const { options: optionsFromCli , args, command } = parseArgs();
 
 
-const { options: optionsFromCli, args, command } = parseArgs();
+const { help, configPath, root, ...restOptionsFromCli } = optionsFromCli
 
-if (optionsFromCli.help) {
+if (help) {
   console.log(getHelpText());
   process.exit(0);
 }
 
 
+/**@type {import('./types/CheckCli').CheckOptions} */
 const options = {
-  ...getConfig()[command],
-  ...optionsFromCli,
+  ...getConfig({
+    root,
+    configPath
+  })[command],
+  ...restOptionsFromCli,
 };
 
-const actionByReport = {
-  json: ({ total, additions, deletions }) =>
-    JSON.stringify({
-      total,
-      additions,
-      deletions,
-    }),
-  human: ({ total, additions, deletions }) =>
-    `Total: ${total}\nAdditions: ${additions}\nDeletions: ${deletions}`,
-  "html-table": ({ total, additions, deletions, errors }) =>
-    `
-    <table>
-      <tbody>
-        <tr>
-          <td>Total</td>
-          <td>${total}</td>
-        </tr>
-        <tr>
-          <td>Additions</td>
-          <td>${additions}</td>
-        </tr>
-        <tr>
-          <td>Deletions</td>
-          <td>${deletions}</td>
-        </tr>
-        ${
-          errors.length
-            ? "<tr><td colspan=2>" +
-              errors.join("</td></tr><tr><td colspan=2>") +
-              "</td></tr>"
-            : ""
-        }
-      </tbody>
-    </table>`
-      .split("\n")
-      .map((line) => line.trim())
-      .join(""),
-  complete: ({ total, additions, deletions, changes, errors }) => {
-    console.table(changes);
-    console.table({ total, additions, deletions });
-
-    return errors.join("\n");
-  },
-};
-
-const actionByCommand = {
-  loc: () => {
-    /**
-     * @type {import('./types/GitCommandBuilder').DiffFilters}
-     */
-
-    /**
-     * @type {import('./types/CheckCli').LOCOptions}
-     */
-    const {
-      exclude = [],
-      limitTotal,
-      limitAdded,
-      limitDeleted,
-      throwIfExceed,
-      report = "human",
-      filters
-    } = options;
-
-    const exclusions =
-      typeof exclude === "string"
-        ? exclude.split(",")
-        : exclude.flatMap(splitBy(","));
-
-    const { stdout } = GitDiffCommandBuilder.create()
-      .numStat()
-      .addDiffFilter(filters)
-      .addArgs(...args)
-      .addExclusion(...exclusions)
-      .setSpawnOptions({
-        stdio: "pipe",
-      })
-      .executeSync();
-
-    const changes = stdout
-      .toString()
-      .split("\n")
-      .filter(Boolean)
-      .map(splitBy("\t"))
-      .map(([additions, deletions, file]) => ({
-        additions: Number(additions),
-        deletions: Number(deletions),
-        file: String(file),
-      }));
-
-    const { additions, deletions } = changes.reduce(
-      (acc, { additions, deletions }) => ({
-        additions: acc.additions + additions,
-        deletions: acc.deletions + deletions,
-      }),
-      { additions: 0, deletions: 0 }
-    );
-
-    const total = additions + deletions;
-
-    /**
-     * @type {string[]}
-     */
-    const errors = [
-      {
-        limit: limitAdded,
-        value: additions,
-        error: `Total lines of code added ${additions} exceeds the limit of ${limitAdded}`,
-      },
-      {
-        limit: limitDeleted,
-        value: deletions,
-        error: `Total lines of code deleted ${deletions} exceeds the limit of ${limitDeleted}`,
-      },
-      {
-        limit: limitTotal,
-        value: total,
-        error: `Total lines of code ${total} exceeds the limit of ${limitTotal}`,
-      },
-    ]
-      .filter(({ limit, value }) => limit && value > Number(limit))
-      .map(getProp("error"));
-
-    const reportFn = actionByReport[report];
-
-    throwIf(!reportFn, `report ${report ?? ''} not found`);
-
-    console.log(reportFn({ total, additions, deletions, changes, errors }));
-
-    throwIf(errors.length && throwIfExceed, errors.join("\n"));
-  
-  },
-  files: () => {
+const { actionName, result } = new Program({
+  options,
+  args,
+})
+  .addAction("loc", LOCService)
+  .addAction("files", () => {
+    // TODO: complete the implementation
     GitDiffCommandBuilder.create()
       .nameOnly()
       .addArgs(...args)
       .addExclusion()
       .executeSync();
-  },
-};
+  },)
+  .executeAction(command);
 
-const action = actionByCommand[command];
 
-if (!action) {
-  throw new Error(`
-    command ${command ?? ''} not found
-    Available commands: ${Object.keys(actionByCommand).join(", ")}
-  `);
+if(actionName === 'loc'){
+  const { report, throwIfExceed } = options;
+  const reportFn = getActionsByCommandHashMap()[report];
+
+  throwIf(!reportFn, `report ${report ?? ''} not found`);
+
+  const { errors } = result 
+
+  console.log(reportFn({...result.data, errors}));
+  
+  throwIf(errors.length && throwIfExceed, errors.join("\n"));
 }
 
-action();
+
 
 // TODO: add contextual help for each command
 function getHelpText() {
@@ -193,5 +88,7 @@ function getHelpText() {
       --throwIfExceed: Throw an error if the limit is exceeded
       --report: Report format (human, json, html-table, complete)
       --help: Print this message
+      --config-path: Path to the configuration file
+      --root: Root directory
   `;
 }
