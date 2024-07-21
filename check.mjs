@@ -83,7 +83,7 @@ const actionByCommand = {
                 <td>Deletions</td>
                 <td>${deletions}</td>
               </tr>
-              ${errors.length ? "<tr><td colspan='2'>" + errors.join('</td></tr><tr><td colspan="2">') + '</td></tr>' : ''}
+              ${errors.length ? "<tr><td colspan=2>" + errors.join('</td></tr><tr><td colspan=2>') + '</td></tr>' : ''}
             </tbody>
           </table>`.split('\n').map(line=>line.trim()).join('')
         )
