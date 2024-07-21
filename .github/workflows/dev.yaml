@@ -12,5 +12,3 @@ jobs:
     with:
       prID: ${{ github.event.pull_request.node_id }}
       args: "${{ github.event.pull_request.head.sha }} ${{ github.event.pull_request.base.sha }}"
-    secrets: 
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
