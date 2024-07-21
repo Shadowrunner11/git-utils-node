@@ -46,4 +46,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: check exceeds
         run: |
-          echo "${{ steps.loc.outputs.report }}" | grep -q 'exceeds' && echo 'Error: Limit exceeds' && exit 1
+          if ${{ contains(steps.loc.outputs.report , 'exceeds')  }}; then
+            echo "Excceds LOC"
+            exit 1
+          else
+            echo "Everything is fine with LOC"
+          fi
