@@ -5,7 +5,6 @@ on:
     inputs:
       pull_request:
         required: true
-        type: object
 
 permissions:
   contents: read
