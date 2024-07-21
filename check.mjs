@@ -31,7 +31,7 @@ const actionByCommand = {
       .split('\n')
       .filter(Boolean)
       .map((line)=>line.split('\t'))
-      .map(([additions, deletions, file])=>({
+      .map(([deletions, additions, file])=>({
         additions: Number(additions),
         deletions: Number(deletions),
         file
@@ -92,6 +92,7 @@ const actionByCommand = {
         )
       }else if(report === 'complete'){
         console.table(changes);
+        console.table({ total, additions, deletions });
       }
   },
   'files': ()=>{
