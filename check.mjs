@@ -1,117 +1,94 @@
-import { parseArgs } from './argsUtils.mjs'
-import { GitDiffCommandBuilder } from './gitDiffCommandBuilder.mjs'
+#!/usr/bin/env node
 
-const { options, args, command } = parseArgs();
+import { parseArgs } from "./src/utils/argsUtils.mjs";
+import { throwIf } from "./src/utils/fn-utils.mjs";
+import { GitDiffCommandBuilder } from "./src/services/gitDiffCommandBuilder.mjs";
+import { getConfig } from './src/utils/config-utils.cjs';
+import { LOCService } from "./src/services/locService.mjs";
+import { getActionsByCommandHashMap } from "./src/modules/reportActionByCommand.mjs";
+import { Program } from "./src/services/program.mjs";
 
-
-
-const actionByCommand = {
-  'loc': ()=>{
-    /**
-     * @type {{exclude?: string | string[]}}
-     */
-    const { exclude = [], limitTotal, limitAdded, limitDeleted, throwIfExceed, report = 'human' } = options
-    const exclusions = typeof exclude  === 'string' ? 
-      exclude.split(',') : 
-      exclude.flatMap(ex=>ex.split(','));
-
-
-    const { stdout } = GitDiffCommandBuilder
-      .create()
-      .numStat()
-      .addArgs(...args)
-      .addExclusion(...exclusions)
-      .setSpawnOptions({
-        stdio: 'pipe'
-      })
-      .executeSync()
-
-    const changes =  stdout
-      .toString()
-      .split('\n')
-      .filter(Boolean)
-      .map((line)=>line.split('\t'))
-      .map(([deletions, additions, file])=>({
-        additions: Number(additions),
-        deletions: Number(deletions),
-        file
-      }))
-
-    const { additions, deletions } = changes
-      .reduce((acc, {additions, deletions})=>({
-        additions: acc.additions + additions,
-        deletions: acc.deletions + deletions
-      }), {additions: 0, deletions: 0})
-
-      const total = additions + deletions;
+/**
+ * @type {{
+ *  options: import('./types/CheckCli').CheckOptions
+ *  args: string[]
+ *  command: string
+ * }}
+ */
+const { options: optionsFromCli , args, command } = parseArgs();
 
 
-      const errors = [];
+const { help, configPath, root, ...restOptionsFromCli } = optionsFromCli
 
-      if(limitTotal && total > Number(limitTotal))
-        errors.push(`Total lines of code ${total} exceeds the limit of ${limitTotal}`);
+if (help) {
+  console.log(getHelpText());
+  process.exit(0);
+}
 
-      if(limitAdded && additions > Number(limitAdded))
-        errors.push(`Total lines of code added ${additions} exceeds the limit of ${limitAdded}`);
 
-      if(limitDeleted && deletions > Number(limitDeleted))
-        errors.push(`Total lines of code deleted ${deletions} exceeds the limit of ${limitDeleted}`);
+/**@type {import('./types/CheckCli').CheckOptions} */
+const options = {
+  ...getConfig({
+    root,
+    configPath
+  })[command],
+  ...restOptionsFromCli,
+};
 
-      if(report === 'json'){
-        console.log(JSON.stringify({
-          total,
-          additions,
-          deletions
-        }))
-      }else if(report === 'human'){
-        console.log(`Total: ${total}`);
-        console.log(`Additions: ${additions}`);
-        console.log(`Deletions: ${deletions}`);
-      }else if(report === 'html-table'){
-        console.log(`
-          <table>
-            <tbody>
-              <tr>
-                <td>Total</td>
-                <td>${total}</td>
-              </tr>
-              <tr>
-                <td>Additions</td>
-                <td>${additions}</td>
-              </tr>
-              <tr>
-                <td>Deletions</td>
-                <td>${deletions}</td>
-              </tr>
-              ${errors.length ? "<tr><td colspan=2>" + errors.join('</td></tr><tr><td colspan=2>') + '</td></tr>' : ''}
-            </tbody>
-          </table>`.split('\n').map(line=>line.trim()).join('')
-        )
-      }else if(report === 'complete'){
-        console.table(changes);
-        console.table({ total, additions, deletions });
-      }
-
-      
-      if(errors.length && throwIfExceed){
-        throw new Error(errors.join('\n'));
-      }
-  },
-  'files': ()=>{
-    GitDiffCommandBuilder
-      .create()
+const { actionName, result } = new Program({
+  options,
+  args,
+})
+  .addAction("loc", LOCService)
+  .addAction("files", () => {
+    // TODO: complete the implementation
+    GitDiffCommandBuilder.create()
       .nameOnly()
       .addArgs(...args)
       .addExclusion()
-      .executeSync()
-  }
+      .executeSync();
+  },)
+  .executeAction(command);
+
+
+if(actionName === 'loc'){
+  const { report, throwIfExceed } = options;
+  const reportFn = getActionsByCommandHashMap()[report];
+
+  throwIf(!reportFn, `report ${report ?? ''} not found`);
+
+  const { errors } = result 
+
+  console.log(reportFn({...result.data, errors}));
+  
+  throwIf(errors.length && throwIfExceed, errors.join("\n"));
 }
 
-const action = actionByCommand[command];
 
-if(!action){
-  throw new Error(`command ${command} not found`);
+
+// TODO: add contextual help for each command
+function getHelpText() {
+  return `
+    Usage: check [command] [options]
+    Examples: 
+      a) To check if the total lines of code exceeds 1000 excluding package.json and package-lock.json
+        node ./check.mjs loc --limitTotal=1000 --report=html-table --exclude="./package.json,./package-lock.json" ^HEAD HEAD
+
+      b) Alternative you can use the following command (the exclude option can be used multiple times)
+        node ./check.mjs loc --limitTotal=1000 --report=html-table --exclude="./package.json" --exclude="./package-lock.json" ^HEAD HEAD
+
+    Commands:
+      loc: Check lines of code
+      files: Check files
+    Options:
+      --exclude: Exclude files or directories
+      --limitTotal: Limit total lines of code
+      --limitAdded: Limit added lines of code
+      --limitDeleted: Limit deleted lines of code
+      --throwIfExceed: Throw an error if the limit is exceeded
+      --report: Report format (human, json, html-table, complete)
+      --help: Print this message
+      --config-path: Path to the configuration file
+      --root: Root directory
+  `;
 }
-
-action();
-

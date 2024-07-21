@@ -1,0 +1,54 @@
+on:
+  workflow_call: 
+    inputs:
+      prID:
+        description: 'Pull request node id'
+        required: true
+        type: string
+      args:
+        description: 'Arguments for check'
+        required: false
+        type: string
+    secrets:
+      GH_TOKEN:
+        description: 'GitHub Token'
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  checkLOC:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: loc
+        id: loc
+        run: |
+          echo "report='$(node ./check.mjs loc ${{ inputs.args }})'" >> $GITHUB_OUTPUT
+      - name: comments
+        uses: octokit/graphql-action@v2.x
+        with:
+          query: |
+            mutation($id: ID!, $body: String!) {
+              addComment(input: {subjectId: $id, body: $body}) {
+                clientMutationId
+              }
+            }
+          variables: |
+            id: ${{ inputs.prID }}
+            body: ${{ steps.loc.outputs.report }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: check exceeds
+        run: |
+          if ${{ contains(steps.loc.outputs.report , 'exceeds')  }}; then
+            echo "Excceds LOC"
+            exit 1
+          else
+            echo "Everything is fine with LOC"
+          fi

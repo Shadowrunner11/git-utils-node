@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 
 /**
- * @typedef {import('./types/BaseCommandBuilder').BaseCommandFluentBuilder} BaseFluentBuilder
+ * @typedef {import('../types/BaseCommandBuilder').BaseCommandFluentBuilder} BaseFluentBuilder
  * 
  */
 export class BaseCommandBuilder{
@@ -29,7 +29,7 @@ export class BaseCommandBuilder{
 
     /**
      * 
-     * @param {import('./types/BaseCommandBuilder').BaseCommandFluentBuilderOptions} initialOptions
+     * @param {import('../types/BaseCommandBuilder').BaseCommandFluentBuilderOptions} initialOptions
      */
     constructor(initialOptions = {}){
         this.addArgs(...(initialOptions.initialArgs ?? this.#args));
@@ -86,7 +86,7 @@ export class BaseCommandBuilder{
 
     #transformOptionToArg(option){
       if(option.value)
-        return `${this.#transformOptionArg(option.option)}=${option.value.toString}`;
+        return `${this.#transformOptionArg(option.option)}=${option.value.toString()}`;
 
       return this.#transformOptionArg(option.option);
     }
@@ -95,10 +95,12 @@ export class BaseCommandBuilder{
      * @type {BaseFluentBuilder['addOption']}
      */
     addOption(option, value){
-      this.#args.push(this.#transformOptionToArg({
+      const transformedOption =this.#transformOptionToArg({
         option,
         value,
-      }));
+      })
+
+      this.#args.push(transformedOption);
 
       return this;
     }
