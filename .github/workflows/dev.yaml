@@ -1,0 +1,11 @@
+on:
+  pull_request: 
+    branches:
+      - develop
+
+jobs:
+  echo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: loc
+        run: node ./check.mjs loc ${{ github.event.pull_request.head.sha }} ${{ github.event.pull_request.base.sha }}
