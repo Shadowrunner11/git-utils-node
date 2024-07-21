@@ -36,7 +36,8 @@ export class GitDiffCommandBuilder extends BaseCommandBuilder {
     return this;
   }
   addExclusion(...exclusions){
-    exclusions.forEach(exclusion=>this.addOption(`:!${exclusion}`))
+    this.addArg('--')
+    exclusions.forEach(exclusion=>this.addArgs(`:!${exclusion}`))
 
     return this;
   }
@@ -53,8 +54,11 @@ export class GitDiffCommandBuilder extends BaseCommandBuilder {
 
     return this.addOption('diff-filter', Object
       .entries(filter)
-      .map(([key, value])=> GitDiffCommandBuilder
-        .diffFilerOptions[value ? key: key.toLowerCase()]
+      .map(([key, value])=>{ 
+        const option = GitDiffCommandBuilder.filters[key];
+        
+        return value ? option : option.toLowerCase();
+      }
       )
       .join('')
     )

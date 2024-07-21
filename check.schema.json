@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "loc": {
+      "type": "object",
+      "properties": {
+        "exclude": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "limitTotal": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "limitAdded": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "throwIfExceed": {
+          "type": "boolean"
+        },
+        "report": {
+          "type": "string",
+          "enum": [
+            "human",
+            "json",
+            "html-table",
+            "complete"
+          ]
+        },
+        "limitDeleted": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "filters": {
+          "type": "object",
+          "properties": {
+            "added": {
+              "type": "boolean"
+            },
+            "copied": {
+              "type": "boolean"
+            },
+            "deleted": {
+              "type": "boolean"
+            },
+            "modified": {
+              "type": "boolean"
+            },
+            "renamed": {
+              "type": "boolean"
+            },
+            "changed": {
+              "type": "boolean"
+            },
+            "unmerged": {
+              "type": "boolean"
+            },
+            "unknown": {
+              "type": "boolean"
+            },
+            "broken": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}
