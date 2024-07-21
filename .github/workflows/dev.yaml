@@ -8,6 +8,12 @@ permissions:
   pull-requests: write
 
 jobs:
+  print:
+    runs-on: ubuntu-latest
+    steps:
+      - name: print
+        run: |
+          echo ${{ github.event.pull_request.node_id }}
   checkLOC:
     uses: ./.github/workflows/check.yml
     with:
