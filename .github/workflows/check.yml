@@ -29,7 +29,7 @@ jobs:
       - name: loc
         id: loc
         run: |
-          echo "report='$(node ./check.mjs loc ${{ github.event.inputs.args }})'" >> $GITHUB_OUTPUT
+          echo "report='$(node ./check.mjs loc ${{ inputs.args }})'" >> $GITHUB_OUTPUT
       - name: comments
         uses: octokit/graphql-action@v2.x
         with:
@@ -40,7 +40,7 @@ jobs:
               }
             }
           variables: |
-            id: ${{ github.event.inputs.prID }}
+            id: ${{ inputs.prID }}
             body: ${{ steps.loc.outputs.report }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
