@@ -18,13 +18,13 @@ jobs:
         uses: octokit/graphql-action@v2.x
         with:
           query: |
-            mutation($id: String!, $body: String!) {
+            mutation($id: ID!, $body: String!) {
               addComment(input: {subjectId: $id, body: $body}) {
                 clientMutationId
               }
             }
           variables: |
-            id: ${{ github.event.pull_request.id }}
+            id: ${{ github.event.pull_request.node_id }}
             body: ${{ steps.loc.outputs.report }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
