@@ -69,11 +69,7 @@ const actionByCommand = {
     /**
      * @type {import('./types/GitCommandBuilder').DiffFilters}
      */
-    const defaultDiffFilters = {
-      copied: false,
-      deleted: false,
-      renamed: false,
-    }
+    const defaultDiffFilters = {}
     /**
      * @type {import('./types/CheckCli').LOCOptions}
      */
