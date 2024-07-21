@@ -1,3 +1,5 @@
+import { unicodeIcons } from "./unicodeIcons.mjs";
+
 export function getActionsByCommandHashMap(){
   return {
     json: ({ total, additions, deletions, errors }) =>
@@ -19,21 +21,21 @@ export function getActionsByCommandHashMap(){
       <table>
         <tbody>
           <tr>
-            <td>Total</td>
+            <td>Total ${unicodeIcons.SUM}</td>
             <td>${total}</td>
           </tr>
           <tr>
-            <td>Additions</td>
+            <td>Additions ${unicodeIcons.LARGE_GREEN_CIRCLE}</td>
             <td>${additions}</td>
           </tr>
           <tr>
-            <td>Deletions</td>
+            <td>Deletions ${unicodeIcons.LARGE_RED_CIRCLE} </td>
             <td>${deletions}</td>
           </tr>
           ${
             errors.length
               ? "<tr><td colspan=2>" +
-                errors.join("</td></tr><tr><td colspan=2>") +
+                errors.map(error=>unicodeIcons.CROSS + ' ' + error).join("</td></tr><tr><td colspan=2>") +
                 "</td></tr>"
               : ""
           }

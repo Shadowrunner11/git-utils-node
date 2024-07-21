@@ -36,3 +36,4 @@ This tool requires Node.js version 20.0.0 or higher.
 - [ ] Support for async spawn with events and streaming
 - [ ] Support for creating directly the needed files of the report
 - [ ] Check for the real value of lines added and deleted, seems inverted in github
+- [ ] Add support for large processing by file to avoid counting comments
