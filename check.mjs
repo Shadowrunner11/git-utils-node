@@ -26,8 +26,7 @@ const actionByCommand = {
       })
       .executeSync()
 
-
-    const { additions, deletions } = stdout
+    const changes =  stdout
       .toString()
       .split('\n')
       .filter(Boolean)
@@ -37,6 +36,8 @@ const actionByCommand = {
         deletions: Number(deletions),
         file
       }))
+
+    const { additions, deletions } = changes
       .reduce((acc, {additions, deletions})=>({
         additions: acc.additions + additions,
         deletions: acc.deletions + deletions
@@ -89,6 +90,8 @@ const actionByCommand = {
             </tbody>
           </table>`
         )
+      }else if(report === 'complete'){
+        console.table(changes);
       }
   },
   'files': ()=>{
