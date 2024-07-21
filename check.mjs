@@ -7,6 +7,7 @@ const { options, args, command } = parseArgs();
 
 const actionByCommand = {
   'loc': ()=>{
+    console.log('loc', options);
     /**
      * @type {{exclude?: string | string[]}}
      */
@@ -47,7 +48,7 @@ const actionByCommand = {
 
 
       const errors = [];
-
+      console.log('total', {limitTotal, total, totalExceed: total > Number(limitTotal)})
       if(limitTotal && total > Number(limitTotal))
         errors.push(`Total lines of code ${total} exceeds the limit of ${limitTotal}`);
 
@@ -91,9 +92,11 @@ const actionByCommand = {
         console.table(changes);
         console.table({ total, additions, deletions });
       }
+      console.log(errors)
 
       if(errors.length && throwIfExceed){
-        throw new Error(errors.join('\n'));
+        console.error(errors.join('\n'));
+        process.exit(1)
       }
   },
   'files': ()=>{
