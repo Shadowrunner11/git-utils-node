@@ -1,0 +1,42 @@
+name: LOC Check
+
+on:
+  workflow_call:
+    inputs:
+      pull_request:
+        required: true
+        type: object
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  echo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: loc
+        id: loc
+        run: |
+          echo "report='$(node ./check.mjs loc --report=html-table --limit-total=40 --throw-if-exceed ${{ github.event.pull_request.head.sha }} ${{ github.event.pull_request.base.sha }})'" >> $GITHUB_OUTPUT
+      - name: comments
+        uses: octokit/graphql-action@v2.x
+        with:
+          query: |
+            mutation($id: ID!, $body: String!) {
+              addComment(input: {subjectId: $id, body: $body}) {
+                clientMutationId
+              }
+            }
+          variables: |
+            id: ${{ github.event.inputs.pull_request.node_id }}
+            body: ${{ steps.loc.outputs.report }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: check exceeds
+        run: |
+          echo "${{ steps.loc.outputs.report }}" | grep -q 'exceeds' && echo 'Error: Limit exceeds' && exit 1
