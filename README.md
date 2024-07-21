@@ -35,3 +35,4 @@ This tool requires Node.js version 20.0.0 or higher.
 - [ ] Add support for modifying or inheritance of configuration
 - [ ] Support for async spawn with events and streaming
 - [ ] Support for creating directly the needed files of the report
+- [ ] Check for the real value of lines added and deleted, seems inverted in github
